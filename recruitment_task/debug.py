@@ -7,7 +7,7 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "recruitment_task.settings")
 django.setup()
 from recruitment_task.tasks import get_meteo_warnings
-
+"""Here is playground to test app functionalities"""
 
 def test_functionality():
     with open('./plik_testowy.txt') as f:
