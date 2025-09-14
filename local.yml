@@ -7,6 +7,9 @@ services:
     command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     ports:
       - 8000:8000
+    depends_on:
+      satagro_postgis:
+        condition: service_healthy
     volumes:
       - .:/app
     networks:
@@ -25,6 +28,11 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - backend
 #    volumes:
@@ -37,9 +45,13 @@ services:
       dockerfile: ./compose/local/django/Dockerfile
     command: celery -A recruitment_task worker -l info
     depends_on:
-      - satagro_redis
+      satagro_postgis:
+        condition: service_healthy
+      satagro_redis:
+        condition: service_started
     networks:
       - backend
+
 
   beat:
     build:
@@ -47,7 +59,10 @@ services:
       dockerfile: ./compose/local/django/Dockerfile
     command: celery -A recruitment_task beat -l info
     depends_on:
-      - satagro_redis
+      satagro_postgis:
+        condition: service_healthy
+      satagro_redis:
+        condition: service_started
     networks:
       - backend
 
