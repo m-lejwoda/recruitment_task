@@ -34,10 +34,10 @@ class MeteoWarningsApiView(APIView):
         try:
             point, error = create_point(self.lon, self.lat)
             if error:
-                return Response({"error": f"Invalid coordinates: {error}"}, status=400)
+                return Response({"error": "Invalid coordinates: {}".format(error)}, status=400)
             district, error = get_district_with_warnings(point)
             if error:
-                return Response({"error": f"Database error: {error}"}, status=500)
+                return Response({"error": "Database error: {}".format(error)}, status=500)
             if not district:
                 return Response({"error": "Localization is out of Polish Country boundaries"}, status=404)
             serializer = DistrictSerializer(district, context={'lat': self.lat, 'lon': self.lon})

@@ -5,11 +5,12 @@ from celery import shared_task
 from celery.signals import worker_ready
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.geos import GEOSGeometry, Polygon, MultiPolygon
-from django.db import transaction
+from django.db import transaction, DatabaseError
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
 from satagro.models import MeteoWarning, District, MeteoWarningArchive
+from satagro.helpers import api_request, parse_safe_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -44,38 +45,37 @@ def generate_districts():
                                         regon=feature["REGON"],
                                         geom=polygon)
             except Exception as e:
-                logger.error(f"Could not create district {feature['JPT_KOD_JE']}: {e}")
-                traceback.print_exc()
+                logger.error("Could not create district {}: {}".format(feature['JPT_KOD_JE'], e))
 
-#TODO Handle Exception
-@shared_task
-def get_meteo_warnings():
-    """Function that is called every minute to download current meteorological warnings"""
-    logger.info("get_meteo_warnings")
-    req = requests.get('https://danepubliczne.imgw.pl/api/data/warningsmeteo')
-    events = req.json()
-    for event in events:
-        try:
-            MeteoWarning.objects.get(id=event["id"])
-        except MeteoWarning.DoesNotExist:
-            valid_from = timezone.make_aware(parse_datetime(event["obowiazuje_od"]))
-            valid_to = timezone.make_aware(parse_datetime(event["obowiazuje_do"]))
-            published = timezone.make_aware(parse_datetime(event["opublikowano"]))
-            with transaction.atomic():
-                meteo = MeteoWarning.objects.create(
-                    id=event["id"],
-                    name_of_event=event["nazwa_zdarzenia"],
-                    grade=event["stopien"],
-                    probability=event["prawdopodobienstwo"],
-                    valid_from=valid_from,
-                    valid_to=valid_to,
-                    published=published,
-                    content=event["tresc"],
-                    comment=event["komentarz"],
-                    office=event["biuro"],
-                )
-                districts = District.objects.filter(district_code__in=event["teryt"])
-                meteo.districts.add(*districts)
+
+# @shared_task
+# def get_meteo_warnings():
+#     """Function that is called every minute to download current meteorological warnings"""
+#     logger.info("get_meteo_warnings")
+#     req = requests.get('https://danepubliczne.imgw.pl/api/data/warningsmeteo')
+#     events = req.json()
+#     for event in events:
+#         try:
+#             MeteoWarning.objects.get(id=event["id"])
+#         except MeteoWarning.DoesNotExist:
+#             valid_from = timezone.make_aware(parse_datetime(event["obowiazuje_od"]))
+#             valid_to = timezone.make_aware(parse_datetime(event["obowiazuje_do"]))
+#             published = timezone.make_aware(parse_datetime(event["opublikowano"]))
+#             with transaction.atomic():
+#                 meteo = MeteoWarning.objects.create(
+#                     id=event["id"],
+#                     name_of_event=event["nazwa_zdarzenia"],
+#                     grade=event["stopien"],
+#                     probability=event["prawdopodobienstwo"],
+#                     valid_from=valid_from,
+#                     valid_to=valid_to,
+#                     published=published,
+#                     content=event["tresc"],
+#                     comment=event["komentarz"],
+#                     office=event["biuro"],
+#                 )
+#                 districts = District.objects.filter(district_code__in=event["teryt"])
+#                 meteo.districts.add(*districts)
 
 @shared_task
 def move_old_meteo_warnings_to_archive():
@@ -108,3 +108,38 @@ def run_at_start(sender, **kwargs):
         sender.app.send_task(
             "recruitment_task.tasks.generate_districts",
         )
+
+@shared_task
+def get_meteo_warnings():
+    """Function that is called every minute to download current meteorological warnings"""
+    logger.info("get_meteo_warnings_")
+    events = api_request('https://danepubliczne.imgw.pl/api/data/warningsmeteo')
+    for event in events:
+        try:
+            # TODO check to actual
+            MeteoWarning.objects.get(id=event["id"])
+
+        except MeteoWarning.DoesNotExist:
+            valid_from = parse_safe_datetime(event["obowiazuje_od"])
+            valid_to = parse_safe_datetime(event["obowiazuje_do"])
+            published = parse_safe_datetime(event["opublikowano"])
+            try:
+                with transaction.atomic():
+                    meteo = MeteoWarning.objects.create(
+                        id=event["id"],
+                        name_of_event=event["nazwa_zdarzenia"],
+                        grade=event["stopien"],
+                        probability=event["prawdopodobienstwo"],
+                        valid_from=valid_from,
+                        valid_to=valid_to,
+                        published=published,
+                        content=event["tresc"],
+                        comment=event["komentarz"],
+                        office=event["biuro"],
+                    )
+                    districts = District.objects.filter(district_code__in=event["teryt"])
+                    meteo.districts.add(*districts)
+            except DatabaseError as e:
+                logger.error("Database error saving warning {}: {}".format(event['id'],e))
+            except Exception as e:
+                logger.error("Unexpected error saving warning {}: {}".format(event['id'],e))
