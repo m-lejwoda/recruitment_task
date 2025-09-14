@@ -1,0 +1,65 @@
+services:
+  satagro_django:
+    container_name: satagro_django
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/app
+    networks:
+      - backend
+
+
+  satagro_postgis:
+    container_name: satagro_postgis
+    build:
+      context: .
+      dockerfile: ./compose/local/postgres/Dockerfile
+    environment:
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=postgis_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    networks:
+      - backend
+#    volumes:
+#    - postgis_data:/var/lib/postgresql/data
+
+
+  celery:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    command: celery -A recruitment_task worker -l info
+    depends_on:
+      - satagro_redis
+    networks:
+      - backend
+
+  beat:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    command: celery -A recruitment_task beat -l info
+    depends_on:
+      - satagro_redis
+    networks:
+      - backend
+
+  satagro_redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  postgis_data:
