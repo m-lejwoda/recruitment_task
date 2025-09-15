@@ -39,6 +39,15 @@ I use **Celery** together with **Celery Beat** to schedule tasks:
 
 I use **PostGIS** plugin to store geometry of districts.
 
+## Some endpoints
+http://127.0.0.1:8000/api/meteo_warnings/?lat=52.559973222669726&lon=16.43304832145737
+
+http://127.0.0.1:8000/api/meteo_warnings/?lat=48.427278426109766&lon=-0.10181299304860603
+
+http://127.0.0.1:8000/api/meteo_warnings/?lat=52.56698693108296&lon=17.008185553339786
+
+http://127.0.0.1:8000/api/meteo_warnings/?lat=53.95574143500109&lon=19.11779845905146
+
 ## Examples
 ![One warning](images/one_warning.png)
 ![No warnings](images/no_warnings.png)
