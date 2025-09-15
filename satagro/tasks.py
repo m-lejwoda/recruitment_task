@@ -142,19 +142,19 @@ def update_warning(existing_warning, event):
     """Update warning if published date changed"""
     try:
         with transaction.atomic():
-            valid_from = parse_safe_datetime(event.get(["obowiazuje_od"]))
-            valid_to = parse_safe_datetime(event.get(["obowiazuje_do"]))
-            published = parse_safe_datetime(event.get(["opublikowano"]))
+            valid_from = parse_safe_datetime(event.get("obowiazuje_od"))
+            valid_to = parse_safe_datetime(event.get("obowiazuje_do"))
+            published = parse_safe_datetime(event.get("opublikowano"))
 
             existing_warning.name_of_event = event.get("nazwa_zdarzenia", "")
-            existing_warning.grade = event.get(["stopien"])
-            existing_warning.probability = event.get(["prawdopodobienstwo"])
+            existing_warning.grade = event.get("stopien")
+            existing_warning.probability = event.get("prawdopodobienstwo")
             existing_warning.valid_from = valid_from
             existing_warning.valid_to = valid_to
             existing_warning.published = published
-            existing_warning.content = event.get(["tresc"])
-            existing_warning.comment = event.get(["komentarz"])
-            existing_warning.office = event.get(["biuro"])
+            existing_warning.content = event.get("tresc")
+            existing_warning.comment = event.get("komentarz")
+            existing_warning.office = event.get("biuro")
             existing_warning.save()
             existing_warning.districts.clear()
             districts = District.objects.filter(district_code__in=event.get("teryt"))

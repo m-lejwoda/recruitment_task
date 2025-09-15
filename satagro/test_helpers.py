@@ -61,4 +61,3 @@ def test_create_check_lat_and_lon_if_return_correct_values():
     res = check_lat_and_lon(request)
     assert res == {'lat':43.2432243234, 'lon': 21.2432243234}
 
-#TODO get_district_with_warnings
