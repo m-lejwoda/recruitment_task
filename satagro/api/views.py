@@ -3,6 +3,7 @@ from django.db.models import Prefetch
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
 from rest_framework.views import APIView
 
 from satagro.api.serializers import DistrictSerializer
@@ -58,12 +59,12 @@ class MeteoWarningsApiView(APIView):
         try:
             point, error = create_point(lon, lat)
             if error:
-                return Response({"error": "Invalid coordinates: {}".format(error)}, status=400)
+                return Response({"error": "Invalid coordinates: {}".format(error)}, status=status.HTTP_404_NOT_FOUND)
             district, error = get_district_with_warnings(point)
             if error:
-                return Response({"error": "Database error: {}".format(error)}, status=500)
+                return Response({"error": "Database error: {}".format(error)}, status=HTTP_500_INTERNAL_SERVER_ERROR)
             if not district:
-                return Response({"error": "Localization is out of Polish Country boundaries"}, status=404)
+                return Response({"error": "Localization is out of Polish Country boundaries"}, status=status.HTTP_404_NOT_FOUND)
             serializer = DistrictSerializer(district, context={'lon': lon, 'lat': lat})
             return Response(serializer.data)
         except Exception:

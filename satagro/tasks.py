@@ -103,6 +103,7 @@ def get_meteo_warnings():
         try:
             existing_warning = MeteoWarning.objects.get(id=event.get("id"))
             published = parse_safe_datetime(event.get("opublikowano"))
+            """When Imgw change smth they change publication date so need to update object"""
             if existing_warning.published != published:
                 logger.info("Warning {} was updated (publication date changed)".format(event.get('id')))
                 update_warning(existing_warning, event)
