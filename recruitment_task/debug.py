@@ -6,7 +6,7 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "recruitment_task.settings")
 django.setup()
-from recruitment_task.tasks import get_meteo_warnings, move_old_meteo_warnings_to_archive
+from satagro.tasks import move_old_meteo_warnings_to_archive
 
 """Here is playground to test app functionalities"""
 

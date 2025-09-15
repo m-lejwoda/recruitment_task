@@ -90,7 +90,7 @@ def move_old_meteo_warnings_to_archive():
 def run_at_start(sender, **kwargs):
     with sender.app.connection():
         sender.app.send_task(
-            "recruitment_task.tasks.generate_districts",
+            "satagro.tasks.generate_districts",
         )
 
 
