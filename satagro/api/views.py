@@ -17,7 +17,7 @@ def create_point(lon, lat):
         return None, str(e)
 
 
-def get_district_with_warnings(point):
+def get_district_with_warnings(point: Point):
     """Function to get all districts with warnings. valid_to__gte is optional because i have worker which runs every hour and removing old records."""
     try:
         district = District.objects.filter(
@@ -31,10 +31,27 @@ def get_district_with_warnings(point):
         return None, str(e)
 
 
+def check_lat_and_lon(request):
+    """Check if lat and lon are valid"""
+    lat_param = request.query_params.get('lat')
+    lon_param = request.query_params.get('lon')
+    if lat_param is None or lon_param is None:
+        return Response({"error": "lon and lat are required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        lat = float(lat_param)
+        lon = float(lon_param)
+        return {"lat": lat, "lon": lon}
+    except ValueError:
+        return Response(
+            {"error": "lon or lat or both are in incorrect format. Remember that both must be numbers."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
 class MeteoWarningsApiView(APIView):
     """Api View for getting meteo warnings base on lon lat"""
     def get(self, request, *args, **kwargs):
-        result = self.check_lat_and_lon(request)
+        result = check_lat_and_lon(request)
         if "error" in result:
             return result["error"]
         lat, lon = result["lat"], result["lon"]
@@ -51,20 +68,4 @@ class MeteoWarningsApiView(APIView):
             return Response(serializer.data)
         except Exception:
             return Response({"error": "Something went wrong. Try again."}, status=status.HTTP_400_BAD_REQUEST)
-
-    def check_lat_and_lon(self,request):
-        """Check if lat and lon are valid"""
-        lat_param = request.query_params.get('lat')
-        lon_param = request.query_params.get('lon')
-        if lat_param is None or lon_param is None:
-            return Response({"error": "lon and lat are required"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            lat = float(lat_param)
-            lon = float(lon_param)
-            return {"lat": lat, "lon": lon}
-        except ValueError:
-            return {"error": Response(
-                {"error": "lon or lat or both are in incorrect format. Remember that both must be numbers."},
-                status=status.HTTP_400_BAD_REQUEST
-            )}
 

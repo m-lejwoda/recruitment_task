@@ -26,6 +26,7 @@ Before running the application, make sure you have the following installed:
    ```bash
    docker exec -it satagro_django python manage.py createupseruser
    docker exec -it satagro_django bash
+   docker exec -it satagro_django pytest
 
 ## Logic behind
 I downloaded and used the district file (`pgr.gml`), which contains the geometry of every district in Poland.  
