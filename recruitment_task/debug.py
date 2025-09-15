@@ -6,7 +6,8 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "recruitment_task.settings")
 django.setup()
-from recruitment_task.tasks import get_meteo_warnings
+from recruitment_task.tasks import get_meteo_warnings, move_old_meteo_warnings_to_archive
+
 """Here is playground to test app functionalities"""
 
 def test_functionality():
@@ -55,4 +56,5 @@ def test_gml_functionality():
 # mw.parse_safe_datetime("sadasdasdasdadsa")
 # api_request("https://danepubliczne.imgw.pl/api/data/warningsmeteo")
 # api_request("sagfdgsddgf")
-get_meteo_warnings()
+# get_meteo_warnings()
+move_old_meteo_warnings_to_archive()

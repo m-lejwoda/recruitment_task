@@ -55,26 +55,35 @@ def generate_districts():
 def move_old_meteo_warnings_to_archive():
     """Function to archive old meteo warnings"""
     logger.info("move_old_meteo_warnings_to_archive")
-    try:
-        warnings_to_archive = MeteoWarning.objects.filter(valid_to__lt=timezone.now())
-        with transaction.atomic():
-            for warning in warnings_to_archive:
-                archived = MeteoWarningArchive.objects.create(
+
+    warnings_to_archive = MeteoWarning.objects.filter(valid_to__lt=timezone.now())
+    logger.info(f"Found {warnings_to_archive.count()} warnings to archive")
+
+    for warning in warnings_to_archive:
+        try:
+            with transaction.atomic():
+                archived, created = MeteoWarningArchive.objects.update_or_create(
                     id=warning.id,
-                    name_of_event=warning.name_of_event,
-                    grade=warning.grade,
-                    probability=warning.probability,
-                    valid_from=warning.valid_from,
-                    valid_to=warning.valid_to,
-                    published=warning.published,
-                    content=warning.content,
-                    comment=warning.comment,
-                    office=warning.office,
+                    defaults={
+                        'name_of_event': warning.name_of_event,
+                        'grade': warning.grade,
+                        'probability': warning.probability,
+                        'valid_from': warning.valid_from,
+                        'valid_to': warning.valid_to,
+                        'published': warning.published,
+                        'content': warning.content,
+                        'comment': warning.comment,
+                        'office': warning.office,
+                    }
                 )
+                archived.districts.clear()
                 archived.districts.add(*warning.districts.all())
                 warning.delete()
-    except Exception as e:
-        logger.error("Could not archive old meteo warnings: {}".format(e))
+
+        except Exception as e:
+            logger.error(f"Could not archive warning {warning.id}: {e}")
+
+    logger.info("Archiving process completed")
 
 
 @worker_ready.connect

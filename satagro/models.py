@@ -52,6 +52,12 @@ class MeteoWarningArchive(models.Model):
     def __str__(self):
         return "{} - {}".format(self.name_of_event, self.id)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['-valid_to']),
+            models.Index(fields=['-published']),
+        ]
+
 
 
 
