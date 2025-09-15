@@ -39,7 +39,8 @@ services:
 #    - postgis_data:/var/lib/postgresql/data
 
 
-  celery:
+  satagro_celery:
+    container_name: satagro_celery
     build:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
@@ -53,7 +54,8 @@ services:
       - backend
 
 
-  beat:
+  satagro_beat:
+    container_name: satagro_beat
     build:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
@@ -67,6 +69,7 @@ services:
       - backend
 
   satagro_redis:
+    container_name: satagro_redis
     image: redis:6
     ports:
       - "6379:6379"
