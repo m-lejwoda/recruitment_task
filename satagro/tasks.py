@@ -9,7 +9,7 @@ from django.db import transaction, DatabaseError
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from satagro.helpers import api_request, parse_safe_datetime
+from satagro.helpers import api_request, parse_safe_datetime, warning_has_changed
 from satagro.models import MeteoWarning, District, MeteoWarningArchive
 
 logger = logging.getLogger(__name__)
@@ -119,10 +119,8 @@ def get_meteo_warnings():
     for event in events:
         try:
             existing_warning = MeteoWarning.objects.get(id=event.get("id"))
-            published = parse_safe_datetime(event.get("opublikowano"))
-            """When Imgw change smth they change publication date so need to update object"""
-            if existing_warning.published != published:
-                logger.info("Warning {} was updated (publication date changed)".format(event.get('id')))
+            if warning_has_changed(existing_warning, event):
+                logger.info(f"Warning {event.get('id')} was updated (detected changes in fields)")
                 update_warning(existing_warning, event)
         except MeteoWarning.DoesNotExist:
             create_warning(event)

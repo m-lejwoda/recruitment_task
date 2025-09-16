@@ -6,7 +6,7 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "recruitment_task.settings")
 django.setup()
-from satagro.tasks import generate_districts
+from satagro.tasks import generate_districts, get_meteo_warnings
 
 """Here is playground to test app functionalities"""
 
@@ -49,7 +49,7 @@ def test_gml_functionality():
 
 
 # generate_districts()
-# get_meteo_warnings()
+get_meteo_warnings()
 # move_old_meteo_warnings_to_archive()
 # mw = MeteoWorker()
 # parse_safe_datetime("2025-09-14 18:00:00")
