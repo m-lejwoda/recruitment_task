@@ -57,14 +57,10 @@ def default_event():
 
 
 def create_event_with_params(**kwargs):
-    """Helper function to create events with params"""
-    default_valid_from_delta = kwargs.pop('valid_from_delta', timedelta(days=5))
-    default_valid_to_delta = kwargs.pop('valid_to_delta', timedelta(days=1))
-    default_published_delta = kwargs.pop('published_delta', timedelta(days=6))
-
-    valid_from = (timezone.now() - default_valid_from_delta).strftime("%Y-%m-%d %H:%M:%S")
-    valid_to = (timezone.now() - default_valid_to_delta).strftime("%Y-%m-%d %H:%M:%S")
-    published = (timezone.now() - default_published_delta).strftime("%Y-%m-%d %H:%M:%S")
+    now = timezone.now()
+    valid_from = now - kwargs.pop('valid_from_delta', timedelta(days=5))
+    valid_to = now - kwargs.pop('valid_to_delta', timedelta(days=1))
+    published = now - kwargs.pop('published_delta', timedelta(days=6))
 
     default_event = {
         "id": "Sk202509152dsffdsdfs02712646",

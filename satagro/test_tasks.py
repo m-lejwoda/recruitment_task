@@ -4,6 +4,7 @@ import pytest
 
 from satagro.api.views import create_point, get_district_with_warnings
 from satagro.conftest import create_event_with_params
+from satagro.helpers import warning_has_changed
 from satagro.models import MeteoWarning, MeteoWarningArchive, District
 from satagro.tasks import move_old_meteo_warnings_to_archive, generate_districts, create_warning, update_warning
 
@@ -72,3 +73,13 @@ def test_update_warning_if_updates_correctly():
     update_warning(meteo_warning, event)
     assert len(MeteoWarning.objects.all()) == 1
     assert MeteoWarning.objects.filter(id=event['id']).first().name_of_event == "Custom"
+
+@pytest.mark.django_db
+def test_warning_has_changed_returns_true_when_data_incorrect():
+    event = create_event_with_params(
+        valid_to_delta=timedelta(minutes=1),
+        nazwa_zdarzenia="Custom Event"
+    )
+    create_warning(event)
+    event['nazwa_zdarzenia'] = "Changed Event"
+    assert warning_has_changed(MeteoWarning.objects.get(id=event['id']), event) == True
