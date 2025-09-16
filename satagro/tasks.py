@@ -108,6 +108,7 @@ def move_old_meteo_warnings_to_archive():
 
 @worker_ready.connect
 def run_at_start(sender, **kwargs):
+    """Generate district before celery tasks starts"""
     generate_districts()
 
 

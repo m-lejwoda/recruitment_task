@@ -4,9 +4,12 @@ import django
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.geos import Point, GEOSGeometry
 
+
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "recruitment_task.settings")
 django.setup()
-from satagro.tasks import generate_districts, get_meteo_warnings
+from satagro.tasks import generate_districts, get_meteo_warnings, move_old_meteo_warnings_to_archive
+from satagro.models import MeteoWarning
 
 """Here is playground to test app functionalities"""
 
@@ -20,7 +23,7 @@ def test_functionality():
 def test_gml_functionality():
     ds = DataSource("./pgr.gml")
     layer = ds[0]
-    print(layer.srs.name)  # np. WGS 84 / EPSG:4326
+    print(layer.srs.name)
     print(layer.srs.wkt)
     lat, lon = 52.559973222669726, 16.43304832145737
     point = Point(lon, lat, srid=4326)
@@ -49,8 +52,11 @@ def test_gml_functionality():
 
 
 # generate_districts()
-get_meteo_warnings()
-# move_old_meteo_warnings_to_archive()
+# get_meteo_warnings()
+# meteo_warnings = MeteoWarning.objects.get(id="Sk20250916093115478")
+# test = meteo_warnings.districts.all()
+# print(meteo_warnings.districts.all())
+move_old_meteo_warnings_to_archive()
 # mw = MeteoWorker()
 # parse_safe_datetime("2025-09-14 18:00:00")
 # mw.parse_safe_datetime(None)
