@@ -171,9 +171,8 @@ def update_warning(existing_warning, event):
             existing_warning.comment = event.get("komentarz")
             existing_warning.office = event.get("biuro")
             existing_warning.save()
-            existing_warning.districts.clear()
-            districts = District.objects.filter(district_code__in=event.get("teryt"))
-            existing_warning.districts.add(*districts)
+            districts = District.objects.filter(district_code__in=event.get("teryt",[]))
+            existing_warning.districts.set(districts)
             logger.info(f"Successfully updated warning {existing_warning.id}")
     except DatabaseError as e:
         logger.error(f"Database error updating warning {existing_warning.id}: {e}")
