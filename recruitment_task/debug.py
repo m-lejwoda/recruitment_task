@@ -6,9 +6,10 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "recruitment_task.settings")
 django.setup()
-from satagro.tasks import move_old_meteo_warnings_to_archive
+from satagro.tasks import generate_districts
 
 """Here is playground to test app functionalities"""
+
 
 def test_functionality():
     with open('./plik_testowy.txt') as f:
@@ -57,4 +58,4 @@ def test_gml_functionality():
 # api_request("https://danepubliczne.imgw.pl/api/data/warningsmeteo")
 # api_request("sagfdgsddgf")
 # get_meteo_warnings()
-move_old_meteo_warnings_to_archive()
+# move_old_meteo_warnings_to_archive()

@@ -1,4 +1,5 @@
 import logging
+import os
 
 from celery import shared_task
 from celery.signals import worker_ready
@@ -13,43 +14,62 @@ from satagro.models import MeteoWarning, District, MeteoWarningArchive
 
 logger = logging.getLogger(__name__)
 
-
 @shared_task
 def generate_districts():
     """Function to generate districts from a Geoportal districts file (pgr.gml)"""
     logger.info("generating districts")
-    ds = DataSource("./pgr.gml")
-    layer = ds[0]
-    for feature in layer:
-        polygon = GEOSGeometry(feature.geom.wkt)
-        polygon.srid = layer.srs.srid
-        polygon.transform(4326)
-        if isinstance(polygon, Polygon):
-            polygon = MultiPolygon(polygon)
-        try:
-            District.objects.get(district_code=feature["JPT_KOD_JE"])
-        except District.DoesNotExist:
+    file_path = "./pgr.gml"
+
+    if not os.path.exists(file_path):
+        logger.error("File pgr.gml does not exist")
+        return False
+
+    try:
+        ds = DataSource(file_path)
+        layer = ds[0]
+
+        existing_codes = set(District.objects.values_list('district_code', flat=True))
+        districts_to_create = []
+
+        for feature in layer:
             try:
-                version_from = timezone.make_aware(parse_datetime(feature["WERSJA_OD"].value)) if feature[
-                    "WERSJA_OD"].value else None
-                version_to = timezone.make_aware(parse_datetime(feature["WERSJA_DO"].value)) if feature[
-                    "WERSJA_DO"].value else None
-                valid_from = timezone.make_aware(parse_datetime(feature["WAZNY_OD"].value)) if feature[
-                    "WAZNY_OD"].value else None
-                valid_to = timezone.make_aware(parse_datetime(feature["WAZNY_DO"].value)) if feature[
-                    "WAZNY_DO"].value else None
-                District.objects.create(district_code=feature["JPT_KOD_JE"],
-                                        id=feature["JPT_ID"].value,
-                                        name=feature["JPT_NAZWA_"],
-                                        type=feature["JPT_SJR_KO"],
-                                        version_from=version_from,
-                                        version_to=version_to,
-                                        valid_from=valid_from,
-                                        valid_to=valid_to,
-                                        regon=feature["REGON"],
-                                        geom=polygon)
+                if feature["JPT_KOD_JE"].value not in existing_codes:
+                    polygon = GEOSGeometry(feature.geom.wkt)
+                    polygon.srid = layer.srs.srid
+                    polygon.transform(4326)
+
+                    if isinstance(polygon, Polygon):
+                        polygon = MultiPolygon(polygon)
+                    version_from = timezone.make_aware(parse_datetime(feature["WERSJA_OD"].value)) if feature[
+                        "WERSJA_OD"].value else None
+                    version_to = timezone.make_aware(parse_datetime(feature["WERSJA_DO"].value)) if feature[
+                        "WERSJA_DO"].value else None
+                    valid_from = timezone.make_aware(parse_datetime(feature["WAZNY_OD"].value)) if feature[
+                        "WAZNY_OD"].value else None
+                    valid_to = timezone.make_aware(parse_datetime(feature["WAZNY_DO"].value)) if feature[
+                        "WAZNY_DO"].value else None
+
+                    districts_to_create.append(District(
+                        district_code=feature["JPT_KOD_JE"].value,
+                        id=feature["JPT_ID"].value,
+                        name=feature["JPT_NAZWA_"],
+                        type=feature["JPT_SJR_KO"],
+                        version_from=version_from,
+                        version_to=version_to,
+                        valid_from=valid_from,
+                        valid_to=valid_to,
+                        regon=feature["REGON"],
+                        geom=polygon
+                    ))
             except Exception as e:
-                logger.error("Could not create district {}: {}".format(feature['JPT_KOD_JE'], e))
+                logger.error("Error processing feature: {}".format(e))
+                continue
+        if districts_to_create:
+            District.objects.bulk_create(districts_to_create, batch_size=1000)
+    except Exception as e:
+        logger.error("Could not load datasource: {}".format(e))
+        return False
+    return True
 
 @shared_task
 def move_old_meteo_warnings_to_archive():
@@ -88,10 +108,7 @@ def move_old_meteo_warnings_to_archive():
 
 @worker_ready.connect
 def run_at_start(sender, **kwargs):
-    with sender.app.connection():
-        sender.app.send_task(
-            "satagro.tasks.generate_districts",
-        )
+    generate_districts()
 
 
 @shared_task
